@@ -1,0 +1,33 @@
+---
+title: "MultiScaleModelCRB"
+output: html_document
+date: "2025-02-05"
+---
+
+```{r}
+# Empty memory and workspace
+gc()
+rm(list=ls())
+```
+
+```{r}
+# Load relevant libraries
+library(raster)
+library(terra)
+library(spThin)
+library(corrplot)
+library(mecofun)
+library(caret)
+library(cvAUC)
+library(pROC)
+library(sp)
+library(dismo)
+library(lattice)
+library(ggplot2)
+library(ecospat)
+library(MASS)
+library(dplyr)
+library(tidyr)
+```
+
+
