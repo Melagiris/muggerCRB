@@ -14,14 +14,14 @@ install.packages(
 )
 install.packages("slam", repos = "https://cloud.r-project.org")
 
-## Calibration (tuning) https://prioritizr.net/articles/calibrating_trade-offs_tutorial.html#data
-# load necessary packages
+## calibration (tuning) https://prioritizr.net/articles/calibrating_trade-offs_tutorial.html#data
+# loading necessary packages
 library(sf)
 library(sp)
 library(gurobi)
 library(prioritizr)
 
-# loading planning unit raster
+# import planning unit raster
 cauvery_pu <- raster(file.choose()) # '/Users/argos/Desktop/Croc Modeling Cauvery River Basin/R/InputOutputFile24Aug/prioritizr/'
 plot(cauvery_pu)
 # cauvery_pu <- cauvery_pu * 10

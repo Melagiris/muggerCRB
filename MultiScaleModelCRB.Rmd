@@ -31,7 +31,6 @@ library(tidyr)
 
 ```{r}
 ### Data collection
-
 ## Background points
 # Load the study region raster
 region <- terra::rast(file.choose())  # Select the raster file
@@ -47,7 +46,7 @@ coords <- terra::geom(bg_rand)
 coords_df <- as.data.frame(coords)
 write.csv(coords_df, "5000backgroundpointsCRB.csv")
 
-## Spatial thinning of occurrence points
+## spatial thinning - occurrence points
 # spThin requires longitude/latitude coordinates
 # thin() expects that the data.frame contains a column with the species name
 sp$spieces <- 'mugger'
