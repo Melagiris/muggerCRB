@@ -1,5 +1,4 @@
-# muggerCRB
-Multi-scale modeling for mugger crocodiles in Cauvery River Basin
+# muggerCRB - Multi-scale modeling for mugger crocodiles in Cauvery River Basin
 
 Consisting three code files for the entire flow presented in the manuscript:
 1) MultiScaleModelCRB.Rmd    --> Data collection, Variable selection, Model fitting, Validation, Extracting final best model, Prediction.
