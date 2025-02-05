@@ -5,13 +5,13 @@ date: "2025-02-05"
 ---
 
 ```{r}
-# Empty memory and workspace
+### Empty memory and workspace
 gc()
 rm(list=ls())
 ```
 
 ```{r}
-# Load relevant libraries
+### Load relevant libraries
 library(raster)
 library(terra)
 library(spThin)
@@ -30,4 +30,319 @@ library(dplyr)
 library(tidyr)
 ```
 
+```{r}
+### Data collection
+
+## Background points
+# Load the study region raster
+region <- terra::rast(file.choose())  # Select the raster file
+# Load species data as a data frame
+sp <- read.csv(file.choose(), header = TRUE)  # Select the CSV file, mugger occurrences
+# Convert `sp` to a SpatVector with coordinates (assuming columns X and Y)
+sp_vect <- terra::vect(sp, geom = c("X", "Y"), crs = crs(region))
+# Generate 5000 background points
+bg_rand <- terra::spatSample(region, 5000, "random", na.rm = T, as.points=TRUE)
+# Extract the coordinates (x, y) from the SpatVector object
+coords <- terra::geom(bg_rand)
+# Convert the coordinates to a data frame
+coords_df <- as.data.frame(coords)
+write.csv(coords_df, "5000backgroundpointsCRB.csv")
+
+## Spatial thinning of occurrence points
+# spThin requires longitude/latitude coordinates
+# thin() expects that the data.frame contains a column with the species name
+sp$spieces <- 'mugger'
+# Removing adjacent cells of presence/background data
+xy <- thin(sp, lat.col='Y', long.col='X', spec.col='spieces', thin.par=1, 
+           reps=1, write.files=F, locs.thinned.list.return=T)
+# Keep the coordinates with the most presence records
+xy_keep <- xy[[1]]
+write.csv(xy_keep, "presenceMuggerCRB.csv")
+```
+
+
+```{r}
+## Raster stack
+# Directory path containing the raster files
+directory_mean <- "/Users/argos/Desktop/Croc Modeling Cauvery River Basin/R/Rasters_Final/finalContinousAndCategorical/select07_var_sel_multiScale"
+# List all files in the directory
+files_mean <- list.files(directory_mean, pattern = "\\.tif$", full.names = TRUE)
+# Create an empty raster stack
+raster_stack_croc <- stack()
+# Loop through each raster file and add it to the stack
+for (file in files_mean) {
+  raster <- raster(file)
+  raster_stack_croc <- addLayer(raster_stack_croc, raster)
+}
+
+## Extracting variable data and converting it to SpatialPointsDataFrame
+coordinates(croc_occ_bg_points) <- ~Longitude + Latitude
+proj4string(croc_occ_bg_points) <- crs(raster_stack_croc)
+extracted_variables <- extract(raster_stack_croc, croc_occ_bg_points, df = TRUE) # using presence and background combined localities, three coloumns, Latitude, Longitude and presence (binary, 0 or 1)
+# Combine extracted values with the original data
+extracted_variables_with_raster <- cbind(as.data.frame(croc_occ_bg_points), extracted_variables)
+# Verify the output
+head(extracted_variables_with_raster)
+# Save the output to CSV
+write.csv(extracted_variables_with_raster, "croc_data.csv", row.names = FALSE)
+```
+
+
+```{r}
+### Variable selection - removing highly correlated variables for multiscale model (considered all scales)
+# Dormann et al. (2013) suggested assessing univariate variable importance in terms of AIC (Akaike information criterion) or explained deviance
+# Hence, fitting a GLM separately for each predictor, then assessing the importance and then rank the variables according to their univariate importance using sing select07() function from package mecofun
+library(mecofun)
+predictor_vars <- croc_data[ , !(names(croc_data) %in% c("Longitude", "Latitude", "presence"))] #raw_data is the after integration test and train data
+response_var <- croc_data$presence
+# Identify predictors with fewer than 3 unique values
+low_variance_vars <- sapply(predictor_vars, function(x) length(unique(x)) < 3)
+filtered_predictors <- predictor_vars[, !low_variance_vars]
+# Scale predictors
+scaled_predictors <- as.data.frame(scale(filtered_predictors))
+# Check for predictors causing perfect separation
+problematic_vars <- sapply(scaled_predictors, function(var) {
+  tryCatch({
+    glm(response_var ~ var, family = binomial)
+    FALSE  # If no error, variable is fine
+  }, error = function(e) {
+    TRUE   # If error, variable causes separation
+  })
+})
+# Remove problematic variables
+cleaned_predictors <- scaled_predictors[, !problematic_vars]
+# Run the select07 function
+variable_selection <- select07(
+  X = cleaned_predictors,  # Cleaned predictors
+  y = response_var,        # Response variable
+  threshold = 0.7          # Correlation threshold
+)
+# check results
+str(variable_selection)
+# inspect the resulting object and extract selected predictors
+pred_sel <- variable_selection$pred_sel
+
+# Output selected predictors
+# the selected variables would be using in the next step for the multiscale variable combination in addition to each scale category
+print(pred_sel)
+```
+
+```{r}
+### defining functions
+
+# select07
+select07 <- function(X, y, threshold = 0.7) {
+  corr_matrix <- cor(X)
+  high_corr_vars <- findCorrelation(corr_matrix, cutoff = threshold)
+  return(X[, -high_corr_vars, drop = FALSE])
+}
+
+
+# Continuous Boyce Index
+ecospat.boyce<- 
+  function (fit, obs, nclass = 0, window.w = "default", res = 100, 
+            PEplot = TRUE) 
+  {
+    # if using raster extract values
+    if (class(fit) == "RasterLayer") {
+      if (class(obs) == "data.frame") {
+        obs <- extract(fit, obs)
+      }
+      fit <- getValues(fit)
+      fit <- fit[!is.na(fit)]
+    }
+    
+    # get min/max values of bins
+    if (window.w == "default") {
+      window.w <- (max(fit) - min(fit))/10
+    }
+    interval <- c(min(fit), max(fit))
+    mini <- interval[1]
+    maxi <- interval[2]
+    
+    # define bin boundaries (note max value of last bin > 1 to ensure all values included)
+    if (nclass == 0) {
+      vec.mov <- seq(from = mini, to = maxi - window.w, by = (maxi - 
+                                                                mini - window.w)/res)
+      vec.mov[res + 1] <- vec.mov[res + 1] + 1
+      interval <- cbind(vec.mov, vec.mov + window.w)
+    }
+    else if (length(nclass) > 1) {
+      vec.mov <- c(mini, nclass)
+      interval <- cbind(vec.mov, c(vec.mov[-1], maxi))
+    }
+    else if (nclass > 0 & length(nclass) < 2) {
+      vec.mov <- seq(from = mini, to = maxi, by = (maxi - mini)/nclass)
+    }
+    
+    # apply hidden function "boycei" (see below) using each interval
+    # find P/E ratio for each bin defined by a row of "interval", call this "f"
+    f <- apply(interval, 1, ecospat:::boycei, obs, fit)
+    to.keep <- which(f != "NaN")
+    f <- f[to.keep]
+    if (length(f) < 2) {
+      b <- NA
+    }
+    else {
+      # get index of bins with P/E > 0
+      r <- c(1:length(f))[f != c(f[-1], FALSE)]
+      
+      # spearman rank correlation
+      b <- cor(f[r], vec.mov[to.keep][r], method = "spearman")
+    }
+    
+    # calculate mean habitat suitabilty in each bin
+    HS <- apply(interval, 1, sum)/2
+    
+    # correct last value of habitat suitabilyt since last bin had 1 added to top value
+    HS[length(HS)] <- HS[length(HS)] - 1
+    
+    # keep just habitat suitability values that have P/E > 0
+    HS <- HS[to.keep]
+    
+    # plot... gray points are actually dropped from the correlation because P/E = 0
+    if (PEplot == TRUE) {
+      plot(HS, f, xlab = "Habitat suitability", ylab = "Predicted/Expected ratio", 
+           col = "grey", cex = 0.75)
+      points(HS[r], f[r], pch = 19, cex = 0.75)
+    }
+    results <- list(F.ratio = f, Spearman.cor = round(b, 3), 
+                    HS = HS)
+    return(results)
+  }
+
+function (interval, obs, fit) {
+  fit.bin <- fit
+  obs.bin <- obs
+  fit.bin[fit[] >= interval[1] & fit[] <= interval[2]] <- "i"
+  fit.bin[fit.bin != "i"] <- 0
+  obs.bin[obs[] >= interval[1] & obs[] <= interval[2]] <- "i"
+  obs.bin[obs.bin != "i"] <- 0
+  pi <- length(which(obs.bin == "i"))/length(obs)
+  ei <- length(which(fit.bin == "i"))/length(fit.bin)
+  fi <- pi/ei
+  return(fi)
+}
+
+calculate_boyce_index <- function(predicted, observed_presences) {
+  # Subset the predicted values for presence points
+  suitability_for_presences <- predicted[observed_presences == 1]
+  # Boyce Index from ecospat package
+  boyce_result <- ecospat.boyce(fit = predicted, obs = suitability_for_presences, PEplot = FALSE)
+  return(boyce_result$Spearman.cor)  # spearman correlation from Boyce Index
+}
+```
+
+```{r}
+## Running the select07 and setpAIC for multiple combinations of variables - for each scale category and for multiscale combinations
+croc_data <- read.csv(file.choose()) # '/Users/argos/Desktop/Croc Modeling Cauvery River Basin/R/presAbsSiteWise/croc_data.csv'
+scales <- c("Base", "1000", "2000", "4000", "8000", "Multiscale")
+
+# multiscale variables - manually added the variable combinations, which were iteratively filtered earlier using select07 function
+multiscale_vars <- c("FlowAcc_SD_4000", "FlowAcc_FM_8000", "FlowAcc_SD_2000", "LULC_Base", 
+                     "FlowAcc_SD_1000", "DistWater_Base", "TWI_SD_500", "FlowAcc_Base",
+                     "CC_Edge_8000", "TWI_FM_8000", "AI_Base", "LULC_CWED_8000", "CC_Base",
+                     "Wetland_Base", "AI_SD_1000", "Wetland_GYRATE_AM_4000", "Wetland_GYRATE_AM_1000",
+                     "Wetland_GYRATE_AM_2000", "bio3_Base", "DistRoad_FM_4000", "LULC_CWED_500",
+                     "bio9_FM_2000", "TWI_Base", "TWI_SD_2000", "SolarRad_SD_2000", 
+                     "HydroConditionedDEM_Base","CC_Edge_2000", "DistRoad_Base", "DistWater_SD_8000", 
+                     "bio18_FM_8000", "LULC_CWED_2000", "TWI_SD_8000", "bio7_FM_8000",
+                     "bio4_FM_2000", "Wetland_GYRATE_AM_8000", "bio15_FM_8000", "bio14_FM_2000")
+
+# store results
+results <- list()
+
+# run the logic, it would take couple of minutes
+for (scale in scales) {
+  predictor_vars <- if (scale == "Multiscale") {
+    croc_data[, multiscale_vars, drop = FALSE]
+  } else {
+    croc_data[, grep(scale, colnames(croc_data)), drop = FALSE]
+  }
+  # ensuring 'presence' is a factor for classification
+  croc_data$presence <- as.factor(croc_data$presence)
+  # applying select07
+  selected_vars <- select07(X = predictor_vars, y = croc_data$presence)
+  # Extract the selected variable names from the list
+  # selected_var_names <- selected_vars$pred_sel
+  # prepare data
+  # Subset croc_data to only include the selected predictor columns
+  glm_data <- data.frame(presence = croc_data$presence, selected_vars)
+  # glm_data <- data.frame(presence = croc_data$presence, croc_data[, selected_var_names, drop = FALSE])
+  # fit GLM
+  glm_model <- glm(presence ~ ., data = glm_data, family = "binomial")
+  # stepAIC for best model
+  best_model <- stepAIC(glm_model, direction = "both", trace = FALSE)
+  # 5-Fold Cross-Validation
+  train_control <- trainControl(method = "cv", number = 5)  # Specify 5-fold CV
+  cv_model <- train(presence ~ ., data = glm_data, method = "glm", family = "binomial", trControl = train_control)
+  # redictions for the current scale
+  predictions <- predict(cv_model, type = "prob")[, 2]  # Get probabilities for presence class
+  # Boyce Index using ecospat
+  boyce_index <- calculate_boyce_index(predicted = predictions, observed_presences = croc_data$presence)
+  # AUC Curve
+  roc_curve <- roc(croc_data$presence, predictions)
+  auc_value <- auc(roc_curve)
+  # Deviance Explained (Pseudo-R²)
+  deviance_explained <- 1 - (best_model$deviance / best_model$null.deviance)
+  # Storing results
+  results[[scale]] <- list(
+    AIC = AIC(best_model),
+    AUC = auc_value,
+    BoyceIndex = boyce_index,
+    DevianceExplained = deviance_explained,
+    BestModelSummary = summary(best_model)
+  )
+}
+
+# results
+for (scale in scales) {
+  cat("Scale:", scale, "\n")
+  cat("AIC:", results[[scale]]$AIC, "\n")
+  cat("AUC:", results[[scale]]$AUC, "\n")
+  cat("Boyce Index:", results[[scale]]$BoyceIndex, "\n")
+  cat("Deviance Explained:", results[[scale]]$DevianceExplained, "\n")
+  cat("Best Model Summary:", "\n")
+  print(results[[scale]]$BestModelSummary)  # Print the model summary
+  cat("------------End------------\n")
+}
+
+results[[scale]] <- list(
+  AIC = AIC(best_model),
+  AUC = auc_value,
+  BoyceIndex = boyce_index,
+  BestModel = best_model  # ensure this captures the relevant object
+)
+```
+
+```{r}
+### best scale with the lowest AIC
+best_model_scale <- scales[which.min(sapply(scales, function(scale) results[[scale]]$AIC))]
+final_best_model <- results[[best_model_scale]]$BestModel
+```
+
+```{r}
+# final_best_model
+if (!inherits(final_best_model, "glm")) {
+  stop("final_best_model is not a GLM object. Please check the results.")
+}
+```
+
+```{r}
+### Predicting the habitat suitabilty map across CRB
+# extracting variables from the final model
+final_best_vars <- all.vars(formula(final_best_model))[-1]
+cat("Variables:", paste(final_best_vars, collapse = ", "), "\n")
+
+# raster stack for prediction map
+env_stack <- stack(list.files(path = "/Users/argos/Desktop/Croc Modeling Cauvery River Basin/R/Rasters_Final/finalContinousAndCategorical", 
+                              pattern = "\\.tif$", full.names = TRUE))
+# subset raster stack to include only variables in the final model
+final_raster_stack <- subset(env_stack, final_best_vars)
+
+# predicting probabilities for each cell in the raster stack
+predicted_distribution <- predict(final_raster_stack, final_best_model, type = "response")
+plot(predicted_distribution)
+writeRaster(predicted_distribution, "predicted_distribution_29Jan2025.tif", overwrite = TRUE)
+```
 

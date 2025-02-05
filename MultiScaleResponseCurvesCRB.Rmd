@@ -1,0 +1,100 @@
+---
+title: "MultiScaleResponseCurvesCRB"
+output: html_document
+date: "2025-02-05"
+---
+
+```{r}
+### Response curves
+response_curves <- list()
+
+for (var in final_best_vars) {
+  var_values <- values(env_stack[[var]])
+  var_values <- var_values[!is.na(var_values)]
+  var_range <- seq(min(var_values), max(var_values), length.out = 100)
+  # data frame with mean values of other variables
+  other_vars <- sapply(setdiff(final_best_vars, var), function(v) {
+    other_var_values <- values(env_stack[[v]])
+    mean(other_var_values, na.rm = TRUE)
+  })
+  
+  # new data with mean values
+  new_data <- data.frame(matrix(other_vars, nrow = 100, ncol = length(other_vars), byrow = TRUE))
+  colnames(new_data) <- setdiff(final_best_vars, var)
+  # adding the range of the focal variable
+  new_data[[var]] <- var_range
+  # column order matches the model
+  new_data <- new_data[, final_best_vars, drop = FALSE]
+  # predicting using the GLM model
+  predictions <- predict(final_best_model, newdata = new_data, type = "response")
+  # saving the response curve for the variable
+  response_curves[[var]] <- data.frame(Value = var_range, Probability = predictions)
+}
+
+# plotting all the response curves
+par(mfrow = c(ceiling(length(final_best_vars) / 2), 2))
+for (var in names(response_curves)) {
+  curve_data <- response_curves[[var]]
+  plot(curve_data$Value, curve_data$Probability, type = "l", col = "blue",
+       main = paste("Response Curve for", var), xlab = var, ylab = "Probability of Presence")
+}
+par(mfrow = c(1, 1))  # Reset plotting layout
+
+# manually feeding the variables manually from the best model, by using the line of code
+# using cat("Variables:", paste(final_best_vars, collapse = ", "), "\n")"
+selected_vars <- c(
+  "FlowAcc_FM_8000", 
+  "LULC_Base", 
+  "DistWater_Base", 
+  "TWI_SD_500", 
+  "TWI_FM_8000", 
+  "Wetland_Base", 
+  "Wetland_GYRATE_AM_4000", 
+  "Wetland_GYRATE_AM_2000", 
+  "bio3_Base", 
+  "LULC_CWED_500", 
+  "HydroConditionedDEM_Base", 
+  "DistRoad_Base", 
+  "LULC_CWED_2000", 
+  "TWI_SD_8000", 
+  "bio7_FM_8000", 
+  "bio4_FM_2000"
+)
+
+# top six best which shows higher variabilty
+selected_vars <- c("FlowAcc_FM_8000", "TWI_SD_500", 
+                   "Wetland_GYRATE_AM_2000", "bio3_Base",
+                   "DistRoad_Base", "bio4_FM_2000")
+filtered_response_curves <- response_curves[selected_vars]
+# combining the selected response curves into one data frame
+combined_response_curves <- do.call(rbind, lapply(names(filtered_response_curves), function(var) {
+  response_curve <- filtered_response_curves[[var]]
+  response_curve$Variable <- var  # Add variable name
+  return(response_curve)
+}))
+
+# plotting all response curves together
+rc <- ggplot(combined_response_curves, aes(x = Value, y = Probability)) +
+  geom_line(size = 0.6, color = "steelblue") +  # Steel blue curves
+  geom_ribbon(aes(ymin = Probability - 0.02, ymax = Probability + 0.02), alpha = 0.2) +  # Confidence interval
+  labs(x = "", y = "Habitat Suitabilty") +
+  theme_minimal() +  # White background
+  theme(
+    axis.text.x = element_text(size = 8, color = "black"), 
+    axis.text.y = element_text(size = 8, color = "black"),
+    axis.title.x = element_text(size = 12, color = "black"),
+    axis.title.y = element_text(size = 12, color = "black"),
+    axis.ticks = element_line(color = "black"),
+    axis.ticks.length = unit(0.05, "cm"),
+    strip.text = element_text(size = 9, color = "black"),
+    panel.grid = element_blank(),  # No grids
+    panel.background = element_rect(fill = "white", color = "black"),
+    panel.border = element_rect(fill = NA, color = "black", size = 0.6),
+    legend.position = "none"  # No legend
+  ) +
+  facet_wrap(~Variable, scales = "free", ncol = 3)
+
+# saving the plot
+ggsave("rc_450.jpeg", rc, width = 7, height = 6, dpi = 600)
+```
+
