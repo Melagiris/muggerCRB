@@ -1,5 +1,4 @@
 ## Bias-weighted background sampling (wetlands, roads, settlements)
-
 library(terra)
 library(sf)
 

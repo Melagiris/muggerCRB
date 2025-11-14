@@ -4,7 +4,7 @@ rm(list=ls())
 
 ### Load relevant libraries ----------------------
 library(raster)
-library(terra)
+library(terra) 
 library(spThin)
 library(corrplot)
 library(mecofun)

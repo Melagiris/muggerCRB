@@ -1,11 +1,11 @@
 ## Load data for GLM spatial CV
 glm_data <- read.csv('/Users/argos/Desktop/Croc Modeling Cauvery River Basin/R/Revision3analysis/BiasWeighted_BGpoints_5k_env_latestwithspThin.CSV')
 
-## Load required libraries
-library(blockCV)
-library(pROC)
+## required libraries
+library(blockCV) 
+library(pROC) 
 library(caret)
-library(dplyr)
+library(dplyr) 
 library(purrr)
 
 ## Convert to sf object
