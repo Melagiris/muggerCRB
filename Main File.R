@@ -149,7 +149,7 @@ for (scale in scales) {
   boyce_vals <- c()
   dev_exp <- c()
   aic_vals <- c()
-  models <- list()
+  models <- list() 
   
   for (i in 1:5) {
     train_data <- glm_data[glm_data$fold != i, ]
