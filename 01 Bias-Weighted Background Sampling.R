@@ -3,7 +3,7 @@ library(terra)
 library(sf)
 
 ## Load input rasters and basin boundary
-wet <- rast("wetLandCompleteUTM.tif")
+wet <- rast("wetLandCompleteUTM.tif") 
 dist_road <- rast("DistRoad_Base.tif")
 dist_settlement <- rast("DistSettlement_Base.tif")
 boundary_v <- vect("CauevryBasinBoundary.shp")

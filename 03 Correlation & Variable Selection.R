@@ -1,7 +1,7 @@
 ## Correlation and variable selection
 
 library(corrplot)
-library(caret)
+library(caret) 
 library(mecofun)
 library(ggplot2)
 library(dplyr)
