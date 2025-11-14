@@ -62,7 +62,6 @@ write.csv(bg_points, "bias_bg_5k_latlong.csv", row.names = FALSE)
 
 
 ## Extract environmental values for 5k points
-
 library(raster)
 
 ## Load bias raster and points
@@ -89,7 +88,6 @@ write.csv(bg_env_data, "BiasWeighted_BGpoints_5k_env.csv", row.names = FALSE)
 
 
 ## Generate 10k bias-weighted background points
-
 valid_mask <- !is.na(bias_final)
 set.seed(124)
 bg_points_10k <- spatSample(

@@ -220,7 +220,6 @@ final_best_model <- stepAIC(final_full, direction = "both", trace = FALSE)
 summary(final_best_model)
 
 
-
 ## ## ## ## ## ## Prediction ## ## ## ## ## ## 
 # extracting variables from the final model
 final_best_vars <- all.vars(formula(final_best_model))[-1]
@@ -392,7 +391,6 @@ area_summary_final <- rbind(area_summary, total_row)
 print(area_summary_final)
 
 
-
 ### extract AIC table
 # defining predictor sets
 base_vars   <- c("AI_Base")
@@ -540,8 +538,6 @@ rc <- ggplot(combined_response_curves, aes(x = Value, y = Probability)) +
     legend.position = "none"
   )
 
-
-
 ## response curves for the top six variable which has shown high variability in the above plots
 selected_vars <- c("bio3_Base", "Wetland_GYRATE_AM_1000", "DistWater_SD_8000",
                    "FlowAcc_FM_8000", "TWI_SD_500", "DistRoad_Base")
@@ -601,7 +597,6 @@ rc <- ggplot(combined_response_curves, aes(x = Value, y = Probability)) +
   facet_wrap(~Variable, scales = "free", ncol = 3)
 
 ggsave("ResponseCurves.jpeg", rc, width = 7, height = 6, dpi = 600)
-
 
 
 ### SCP | prioritizr using gurobi solver

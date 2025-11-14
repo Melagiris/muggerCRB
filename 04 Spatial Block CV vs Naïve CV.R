@@ -50,10 +50,11 @@ for (i in 1:max(folds, na.rm = TRUE)) {
   }
   
   model <- glm(
-    presence ~ FlowAcc_FM_8000 + LULC_Base + DistWater_Base +
-      TWI_SD_500 + TWI_FM_8000 + Wetland_Base + Wetland_GYRATE_AM_4000 +
-      Wetland_GYRATE_AM_2000 + bio3_Base + LULC_CWED_500 + HydroConditionedDEM_Base +
-      DistRoad_Base + LULC_CWED_2000 + TWI_SD_8000 + bio7_FM_8000 + bio4_FM_2000,
+    presence ~ FlowAcc_FM_8000 + LULC_Base +
+      TWI_SD_500 + FlowAcc_Base + DistWater_Base +
+      DistSettlement_FM_4000 + LULC_CWED_1000 +
+      DistWater_SD_8000 + bio3_Base + SolarRad_SD_2000 +
+      DistRoad_Base + Wetland_Base + Wetland_GYRATE_AM_1000,
     family = "binomial",
     data = train
   )

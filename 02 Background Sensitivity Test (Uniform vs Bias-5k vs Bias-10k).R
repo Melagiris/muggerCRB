@@ -28,8 +28,7 @@ partial_roc_manual <- function(pred, obs, proportion = 0.95, iterations = 1000) 
   return(auc_ratio)
 }
 
-
-### Continuous Boyce Index ----------------------
+### Helper function: Continuous Boyce Index
 robust_boyce <- function(fit, obs, res = 200, window.w = "default", plot = FALSE) {
   fit <- as.numeric(fit)
   obs <- as.numeric(obs)
@@ -67,10 +66,11 @@ for (bg in names(datasets)) {
   df <- datasets[[bg]] %>% filter(complete.cases(.))
   df$presence <- as.numeric(df$presence)
   ms <- glm(
-    formula = presence ~ FlowAcc_FM_8000 + LULC_Base + DistWater_Base +
-      TWI_SD_500 + TWI_FM_8000 + Wetland_Base + Wetland_GYRATE_AM_4000 +
-      Wetland_GYRATE_AM_2000 + bio3_Base + LULC_CWED_500 + HydroConditionedDEM_Base +
-      DistRoad_Base + LULC_CWED_2000 + TWI_SD_8000 + bio7_FM_8000 + bio4_FM_2000,
+    formula = presence ~ FlowAcc_FM_8000 + LULC_Base +
+      TWI_SD_500 + FlowAcc_Base + DistWater_Base +
+      DistSettlement_FM_4000 + LULC_CWED_1000 +
+      DistWater_SD_8000 + bio3_Base + SolarRad_SD_2000 +
+      DistRoad_Base + Wetland_Base + Wetland_GYRATE_AM_1000,
     family = "binomial",
     data = df
   )
