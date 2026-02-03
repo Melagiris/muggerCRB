@@ -1,5 +1,7 @@
 # muggerCRB
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18467553.svg)](https://doi.org/10.5281/zenodo.18467553)
+
 **Multi-scale habitat modeling to improve spatial prioritization for mugger crocodile conservation in riverine landscapes**
 
 This repository contains the code used for the analyses presented in the manuscript:
