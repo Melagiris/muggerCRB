@@ -5,8 +5,9 @@
 **Multi-scale habitat modeling to improve spatial prioritization for mugger crocodile conservation in riverine landscapes**
 
 This repository contains the code used for the analyses presented in the manuscript:
-> *Multi-scale habitat modeling to improve spatial prioritization for mugger crocodile conservation in riverine landscapes*  
-> Ecological Applications
+> *Multi-scale habitat modeling to improve spatial prioritization for mugger crocodile conservation in riverine landscapes*
+> 
+> Journal: Ecological Applications
 
 The repository implements a multi-scale habitat modeling workflow for evaluating habitat suitability of mugger crocodiles (*Crocodylus palustris*) in Cauvery River Basin.
 
