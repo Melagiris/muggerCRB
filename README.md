@@ -9,7 +9,7 @@ This repository contains the code used for the analyses presented in the manuscr
 > 
 > Journal: Ecological Applications
 
-The repository implements a multi-scale habitat modeling workflow for evaluating habitat suitability of mugger crocodiles (*Crocodylus palustris*) in Cauvery River Basin.
+It implements a multi-scale habitat modeling workflow for evaluating habitat suitability of mugger crocodiles (*Crocodylus palustris*) in Cauvery River Basin.
 
 ---
 
