@@ -4,7 +4,7 @@
 
 **Multi-scale habitat modeling to improve spatial prioritization for mugger crocodile conservation in riverine landscapes**
 
-This repository contains the code used for the analyses presented in the manuscript:
+This repository contains the code and occurrence data used for the analyses presented in the manuscript:
 > *Multi-scale habitat modeling to improve spatial prioritization for mugger crocodile conservation in riverine landscapes*
 > 
 > Journal: Ecological Applications
@@ -15,22 +15,31 @@ It implements a multi-scale habitat modeling workflow for evaluating habitat sui
 
 ## Repository contents
 
-The repository is organized as follows:
+The repository is organized as:
 
-- `01 Bias-Weighted Background Sampling.R`  
-  Bias surface creation and background point generation
+- **code/**  
+  Contains all R scripts used for model development and analysis
 
-- `02 Background Sensitivity Test (Uniform vs Bias-weighted).R`  
-  Sensitivity analysis of background sampling approaches
+  - `01 Bias-Weighted Background Sampling.R`  
+    Bias surface creation and background point generation
 
-- `03 Correlation & Variable Selection.R`  
-  Collinearity assessment and predictor selection
+  - `02 Background Sensitivity Test (Uniform vs Bias-weighted).R`  
+    Sensitivity analysis of background sampling approaches
 
-- `04 Spatial Block CV vs Naïve CV.R`  
-  Comparison of spatial block cross-validation and naïve cross-validation
+  - `03 Correlation & Variable Selection.R`  
+    Collinearity assessment and predictor selection
 
-- `Main File.R`  
-  Main script for model fitting, validation, prediction, response curves, and spatial prioritization
+  - `04 Spatial Block CV vs Naïve CV.R`  
+    Comparison of spatial block cross-validation and naïve cross-validation
+
+  - `Main File.R`  
+    Main script for model fitting, validation, prediction, response curves, and spatial prioritization
+
+- **data/**
+  
+  Contains the occurrence dataset used in the habitat suitability modelling.
+
+  - `mugger_occurrence_CRB.csv`  
 
 ---
 
